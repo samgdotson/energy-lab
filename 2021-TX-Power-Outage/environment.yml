@@ -29,3 +29,4 @@ dependencies:
     - pandapower[all]
     - PYPOWER
     - pymatreader
+    - cartopy
