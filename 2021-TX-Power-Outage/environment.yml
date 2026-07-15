@@ -26,3 +26,6 @@ dependencies:
     - highspy
     - us
     - census
+    - pandapower[all]
+    - PYPOWER
+    - pymatreader
