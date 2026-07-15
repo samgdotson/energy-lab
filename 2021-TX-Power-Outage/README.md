@@ -5,6 +5,13 @@ Reproduce the results from this [paper](https://arxiv.org/abs/2104.04146) by con
 
 Currently, the scripts assume you have the following directory structure
 
+```bash
 ├───2021TXPowerOutage
 ├───energy-lab # (this repository)
 │   └───2021-TX-Power-Outage
+```
+
+To implement, navigate to the parent directory holding `energy-lab` and then run
+```bash
+git clone git@github.com:tamu-engineering-research/2021TXPowerOutage.git
+```
