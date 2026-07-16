@@ -30,3 +30,4 @@ dependencies:
     - PYPOWER
     - pymatreader
     - cartopy
+    - haversine
