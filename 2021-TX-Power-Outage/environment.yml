@@ -4,13 +4,13 @@ channels:
   - bioconda
 dependencies:
   - python < 3.14
-  - pip
+  - pip==21.1
   - ipython
   - matplotlib
   - pandas
   - geopandas
-  - numpy
-  - scipy
+  - numpy==2.2.6
+  - scipy>=1.13
   - ipykernel
   - jupyterlab
   - seaborn
@@ -31,3 +31,4 @@ dependencies:
     - pymatreader
     - cartopy
     - haversine
+    - six==1.15.0
