@@ -1,0 +1,29 @@
+name: Midwest24k
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python < 3.14
+  - pip
+  - ipython
+  - matplotlib
+  - pandas
+  - geopandas
+  - numpy
+  - scipy
+  - ipykernel
+  - jupyterlab
+  - seaborn
+  - pypsa
+  - plotly
+  - pyarrow
+  - iprogress
+  - pyogrio
+  - fiona
+  - snakemake-minimal
+  - pip:
+    - python-dotenv
+    - highspy
+    - us
+    - census
+    - pymatreader
