@@ -13,6 +13,7 @@ dependencies:
   - scipy
   - ipykernel
   - jupyterlab
+  - jupyter
   - seaborn
   - pypsa
   - plotly
@@ -21,6 +22,7 @@ dependencies:
   - pyogrio
   - fiona
   - snakemake-minimal
+  - cartopy
   - pip:
     - python-dotenv
     - highspy
