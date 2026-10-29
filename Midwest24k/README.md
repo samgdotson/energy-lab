@@ -15,6 +15,10 @@ Common tools such as
 are unable to read `.m` files. However, from TAMU documentation on [file formats](https://electricgrids.engr.tamu.edu/file-formats/),
 > m – text file containing only power flow data with generator cost model data
 
-these files are only text files. So, they can be read in manually via `pandas` and `readlines`.
+these files are only text files. So, they can be read in manually via `pandas` and  the native `readlines`.
 
 2. `.m` files cannot hold coordinate data. But it is possible to extract the coordinates from [PowerWorld Viewer](https://www.powerworld.com/download-purchase/demo-software/powerworld-viewer-download), a free a demo software for viewing PWB files. So, I downloaded the corresponding PWB files and saved the coordinates found under `Tools and Add Ons > Geography > Buses`. (The PWB for Midwest24k is not included in this repository due to its size). 
+
+3. Manual imports of `.m` files need to take care when converting electrical units (e.g., Ohms, MVAr, Siemens).
+
+4. Apparently, Highs cannot solve MIQP so using HiGHs means deciding between quadratic prices or unit-commitment (or other parameter that would introduce mixed-integer decision variables).
