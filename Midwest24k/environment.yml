@@ -23,6 +23,7 @@ dependencies:
   - fiona
   - snakemake-minimal
   - cartopy
+  - atlite
   - pip:
     - python-dotenv
     - highspy
