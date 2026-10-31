@@ -1,0 +1,40 @@
+# Post-processing settings: resource maps and the wind/battery siting screen.
+# Kept out of config.yaml on purpose: every rule takes config.yaml as input, so editing it
+# would rerun the 31 solves (LOGBOOK D20). Nothing here affects the dispatch model.
+
+solar:
+  panel: CSi
+  orientation: latitude_optimal
+  tracking: null          # null (fixed tilt) | horizontal (single-axis, N-S axis)
+  mask_km: 40             # maps keep ERA5 cells within this distance of a bus
+
+wind_site:
+  size_MW: 500
+  min_kv: 230             # interconnection voltage for a 500 MW plant
+  shortlist: 200          # top buses by market value that get the PTDF deliverability test
+  n_sites: 5
+  min_spacing_km: 120     # recommended sites are at least this far apart
+  max_per_state: 2
+
+battery:
+  power_MW: 200
+  energy_MWh: 800         # 4 h
+  round_trip_eff: 0.85
+  max_cycles_per_day: 1   # throughput cap: discharge <= energy_MWh per day
+  degradation_cost: 5     # $/MWh discharged, keeps the LP from cycling on tiny spreads
+  min_kv: 115
+  shortlist: 400          # unique price series that get the full arbitrage LP
+  n_sites: 5
+  min_spacing_km: 120
+  max_per_state: 2
+
+# Branches whose congestion is believed to be a data artefact of the synthetic case
+# (LOGBOOK F12). They are left out of the hosting test, and buses where their congestion moves
+# the mean price by more than the threshold are reported but not recommended: re-solving two
+# days with L4698 uprated showed price errors of $2-7/MWh beyond ~$5 (LOGBOOK section 8).
+artefact_branches: ["Line:L4698"]
+artefact_price_threshold: 5.0   # $/MWh
+# Prices that rank the sites: raw (solved LMPs) or adjusted (artefact congestion removed,
+# first order). Raw matched the uprated re-solves' spatial pattern better (corr. 0.73/0.89
+# vs 0.50/0.70); the other basis is reported alongside.
+price_basis: raw

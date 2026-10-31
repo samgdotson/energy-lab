@@ -27,6 +27,9 @@ wildcard_constraints:
 rule all:
     input:
         f"results/{YM}/summary/report.md",
+        f"results/{YM}/maps/wind_resource.png",
+        f"results/{YM}/maps/line_loading_map.png",
+        f"results/{YM}/siting/siting_summary.json",
 
 
 rule build_network:
@@ -83,6 +86,22 @@ rule retrieve_cutout:
     shell:
         "{PY} scripts/retrieve_cutout.py --year {params.year} --month {params.month} "
         "--bounds {params.bounds} --out {output} > {log} 2>&1"
+
+
+# Solar (radiation + temperature) for the resource maps only; the dispatch model has no
+# solar in service (LOGBOOK D5). Kept separate so the wind cutout and solves don't rerun.
+rule retrieve_cutout_solar:
+    output:
+        "resources/cutout_solar_{ym}.nc",
+    params:
+        bounds=" ".join(map(str, WIND["cutout_bounds"])),
+        year=lambda w: w.ym[:4],
+        month=lambda w: int(w.ym[5:]),
+    log:
+        "logs/retrieve_cutout_solar_{ym}.log",
+    shell:
+        "{PY} scripts/retrieve_cutout.py --year {params.year} --month {params.month} "
+        "--bounds {params.bounds} --features influx temperature --out {output} > {log} 2>&1"
 
 
 def wind_inputs(w):
@@ -157,3 +176,75 @@ rule summarize:
     shell:
         "{PY} scripts/summarize.py --network {input.network} --days-dir results/{wildcards.ym}/days "
         "--load-sources {input.load_sources} --outdir results/{wildcards.ym}/summary > {log} 2>&1"
+
+
+# ---------------------------------------------------------------------------------------
+# Post-processing: resource maps, line loading, wind/battery siting screen.
+# Settings in config/siting.yaml (not config.yaml, so the solves don't rerun; LOGBOOK D20).
+
+def month_days(w):
+    return expand("results/{ym}/days/{day}/status.json", ym=w.ym,
+                  day=[d for d in DAYS if d.startswith(w.ym)])
+
+
+rule resource_maps:
+    input:
+        config="config/config.yaml",
+        siting="config/siting.yaml",
+        network="resources/base_network.nc",
+        wind="resources/cutout_{ym}.nc",
+        solar="resources/cutout_solar_{ym}.nc",
+    output:
+        wind="results/{ym}/maps/wind_resource.png",
+        solar="results/{ym}/maps/solar_resource.png",
+        grid="results/{ym}/maps/resource_cf_grid.csv",
+    log:
+        "logs/resource_maps_{ym}.log",
+    shell:
+        "{PY} scripts/resource_maps.py --config {input.config} --siting-config {input.siting} "
+        "--network {input.network} --wind-cutout {input.wind} --solar-cutout {input.solar} "
+        "--outdir results/{wildcards.ym}/maps > {log} 2>&1"
+
+
+rule line_loading:
+    input:
+        network="resources/network_{ym}.nc",
+        status=month_days,
+    output:
+        flows="results/{ym}/maps/branch_flows.parquet",
+        stats="results/{ym}/maps/branch_loading_stats.csv",
+        map="results/{ym}/maps/line_loading_map.png",
+        hexbin="results/{ym}/maps/line_loading_hexbin.png",
+    log:
+        "logs/line_loading_{ym}.log",
+    resources:
+        mem_mb=4000,
+    shell:
+        "{PY} scripts/line_loading.py --network {input.network} --days-dir results/{wildcards.ym}/days "
+        "--outdir results/{wildcards.ym}/maps > {log} 2>&1"
+
+
+rule siting:
+    input:
+        config="config/config.yaml",
+        siting="config/siting.yaml",
+        network="resources/network_{ym}.nc",
+        status=month_days,
+        flows="results/{ym}/maps/branch_flows.parquet",
+        stats="results/{ym}/maps/branch_loading_stats.csv",
+        wind="resources/cutout_{ym}.nc",
+        grid="results/{ym}/maps/resource_cf_grid.csv",
+    output:
+        summary="results/{ym}/siting/siting_summary.json",
+        wind="results/{ym}/siting/wind_sites.csv",
+        battery="results/{ym}/siting/battery_sites.csv",
+        map="results/{ym}/siting/siting_map.png",
+    log:
+        "logs/siting_{ym}.log",
+    resources:
+        mem_mb=6000,
+    shell:
+        "{PY} scripts/siting.py --config {input.config} --siting-config {input.siting} "
+        "--network {input.network} --days-dir results/{wildcards.ym}/days --flows {input.flows} "
+        "--branch-stats {input.stats} --wind-cutout {input.wind} --resource-grid {input.grid} "
+        "--outdir results/{wildcards.ym}/siting > {log} 2>&1"
