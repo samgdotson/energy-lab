@@ -1,0 +1,70 @@
+# Midwest24k month-long DC-OPF workflow. See LOGBOOK.md for the reasoning behind each choice.
+
+case:
+  matpower: ../case_data/Midwest24k_20220923.m
+  bus_meta: ../case_data/Midwest24k_BusMetaData.csv
+  substation_meta: ../case_data/Midwest24k_SubstationMetaData.csv
+
+analysis:
+  year: 2015
+  month: 8            # August 2015: EIA-930 starts 2015-07-01; August is fully covered
+  # Snapshots are hourly, labelled by the hour *start* in UTC.
+
+load:
+  # Each state's buses follow one hourly profile, scaled so the profile's peak
+  # (over all data available for `analysis.year`) equals the case's static load.
+  eia930:
+    url: https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_{year}_{half}.csv
+  # State (case "Area Name") -> EIA-930 balancing authority supplying the profile shape.
+  # Primary BA by load served; mixed states noted in LOGBOOK.md.
+  state_to_ba:
+    IL: MISO
+    MI: MISO
+    MN: MISO
+    IN: MISO
+    WI: MISO
+    MO: MISO
+    IA: MISO
+    LA: MISO
+    AR: MISO
+    MS: MISO
+    ND: MISO
+    MT: MISO
+    KY: MISO
+    OK: SWPP
+    KS: SWPP
+    NE: SWPP
+    SD: SWPP
+    TX: SWPP
+    NM: SWPP
+  # User-supplied profiles override the BA profile for a state. Format: MISO market-day CSV
+  # (MarketDay, Hour1..Hour24, hour-ending Eastern Standard Time).
+  user_profiles:
+    WI: ../case_data/timeseries/WI_Hourly_Load.csv
+  # Fallback if a state has no EIA/user data: synthetic profile (seeded, see scripts).
+  synthetic_seed: 2015
+
+renewables:
+  wind:
+    source: atlite        # atlite | synthetic | csv
+    csv: null             # path to a CSV (index: UTC hour, columns: generator names), source: csv
+    turbine: Vestas_V112_3MW   # same turbine as notebooks/read_matpower.ipynb
+    cutout_bounds: [-106.0, 28.75, -82.0, 49.25]  # x0, y0, x1, y1 (deg), covers every bus
+  # No hydro inflow data: constant availability factor (fraction of p_nom), placeholder
+  hydro_availability: 0.5
+  synthetic_seed: 42
+
+solving:
+  solver: highs
+  solver_options:
+    # Interior point without crossover: one snapshot solves in ~9 s; dual simplex had not
+    # finished after 20+ min (dense cycle-based KVL rows). Duals (LMPs) come from the IPM.
+    solver: ipm
+    run_crossover: "off"
+    primal_feasibility_tolerance: 1.0e-6
+    dual_feasibility_tolerance: 1.0e-6
+  threads_per_day: 2      # Snakemake threads per solve_day job
+  mem_mb_per_day: 5000    # measured peak 4.3 GB for one 24-h day (sparse KVL); pass --resources mem_mb=...
+  load_shedding_cost: 10000   # $/MWh, at every load bus; reported, should be ~0
+  # No inter-temporal constraints (no storage, ramping, or UC), so days are independent
+  # and can be solved in parallel.
