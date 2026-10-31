@@ -219,3 +219,6 @@ __marimo__/
 
 cb_2018*
 tl_2025_*
+
+.snakemake
+results
